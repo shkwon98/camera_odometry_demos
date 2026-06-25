@@ -1,0 +1,12 @@
+{
+  "camera_resolution": {
+    "width": 1280,
+    "height": 720
+  },
+  "camera_frame": "zed2i_camera_center",
+  "camera_model": "zed2i",
+  "focal_length": {
+    "f_x": 527.886474609375,
+    "f_y": 527.886474609375
+  }
+}
