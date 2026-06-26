@@ -134,17 +134,11 @@ def test_d555_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
 
     for parameter in (
         '"frame_id": "camera_link"',
-        '"odom_frame_id": "odom"',
-        '"map_frame_id": "map"',
-        '"publish_tf": True',
-        '"approx_sync": True',
-        '"topic_queue_size": 10',
         '"sync_queue_size": 10',
         '"qos": 2',
         '"qos_image": 2',
         '"qos_camera_info": 2',
         '"qos_odom": 2',
-        '"subscribe_depth": True',
         '"subscribe_odom_info": True',
         'DeclareLaunchArgument("launch_rviz", default_value="true")',
         'IfCondition(LaunchConfiguration("launch_rviz"))',
@@ -181,5 +175,13 @@ def test_d555_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
         '"enable_accel": "false"',
         '"enable_motion": "false"',
         '"enable_rgbd": "true"',
+        '"odom_frame_id": "odom"',
+        '"map_frame_id": "map"',
+        '"publish_tf": True',
+        '"approx_sync": True',
+        '"topic_queue_size": 10',
+        '"subscribe_depth": True',
+        '"/camera_odom_d555/aligned_depth_to_color/image_raw"',
+        '"/camera/camera/aligned_depth_to_color/image_raw"',
     ):
         assert removed_argument not in launch_text

@@ -102,7 +102,7 @@ def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
         '"enable_gyro": False',
         '"enable_accel": False',
         '"enable_motion": False',
-        '"align_depth.enable": True',
+        '"align_depth.enable": False',
         '"enable_sync": True',
         '"rgb_camera.color_profile": "640,480,60"',
         '"depth_module.depth_profile": "640,480,60"',
@@ -111,7 +111,7 @@ def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
 
     for remapping in (
         '("rgb/image", "/camera/camera/color/image_raw")',
-        '("depth/image", "/camera/camera/aligned_depth_to_color/image_raw")',
+        '("depth/image", "/camera/camera/depth/image_rect_raw")',
         '("rgb/camera_info", "/camera/camera/color/camera_info")',
         '("odom", "/odom")',
     ):
@@ -119,17 +119,11 @@ def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
 
     for parameter in (
         '"frame_id": "camera_link"',
-        '"odom_frame_id": "odom"',
-        '"map_frame_id": "map"',
-        '"publish_tf": True',
-        '"approx_sync": True',
-        '"topic_queue_size": 10',
         '"sync_queue_size": 10',
         '"qos": 2',
         '"qos_image": 2',
         '"qos_camera_info": 2',
         '"qos_odom": 2',
-        '"subscribe_depth": True',
         '"subscribe_odom_info": True',
         'DeclareLaunchArgument("launch_rviz", default_value="true")',
         'IfCondition(LaunchConfiguration("launch_rviz"))',
@@ -146,7 +140,7 @@ def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
             "/mapData",
             "/odom_local_map",
             "/camera/camera/color/image_raw",
-            "/camera/camera/aligned_depth_to_color/image_raw",
+            "/camera/camera/depth/image_rect_raw",
         ),
     )
 
@@ -191,6 +185,13 @@ def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
         'DeclareLaunchArgument("map_frame_id"',
         'DeclareLaunchArgument("approx_sync"',
         'DeclareLaunchArgument("publish_tf"',
+        '"odom_frame_id": "odom"',
+        '"map_frame_id": "map"',
+        '"publish_tf": True',
+        '"approx_sync": True',
+        '"topic_queue_size": 10',
+        '"subscribe_depth": True',
+        '"/camera/camera/aligned_depth_to_color/image_raw"',
     ):
         assert removed_argument not in launch_text
 

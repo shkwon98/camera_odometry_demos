@@ -63,14 +63,9 @@ def generate_launch_description():
         parameters=[
             {
                 "frame_id": "camera_link",
-                "odom_frame_id": "odom",
-                "publish_tf": True,
-                "approx_sync": True,
-                "topic_queue_size": 10,
                 "sync_queue_size": 10,
                 "qos": 2,
                 "qos_camera_info": 2,
-                "subscribe_depth": True,
             }
         ],
         remappings=rgbd_remappings,
@@ -84,15 +79,9 @@ def generate_launch_description():
         parameters=[
             {
                 "frame_id": "camera_link",
-                "map_frame_id": "map",
-                "publish_tf": True,
-                "approx_sync": True,
-                "topic_queue_size": 10,
-                "sync_queue_size": 10,
                 "qos_image": 2,
                 "qos_camera_info": 2,
                 "qos_odom": 2,
-                "subscribe_depth": True,
                 "subscribe_odom_info": True,
             }
         ],

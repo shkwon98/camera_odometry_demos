@@ -140,6 +140,10 @@ def test_realsense_d555_visual_slam_launch_builds_rgbd_graph():
         "CameraInfo",
         "create_subscription",
         "create_publisher",
+        "input_qos",
+        "output_qos",
+        "ReliabilityPolicy.BEST_EFFORT",
+        "ReliabilityPolicy.RELIABLE",
     ):
         assert expected_text in restamp_text
     assert "signal.signal" not in restamp_text

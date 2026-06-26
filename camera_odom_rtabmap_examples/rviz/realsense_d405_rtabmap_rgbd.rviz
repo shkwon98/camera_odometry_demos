@@ -60,9 +60,9 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/Image
       Enabled: true
-      Name: Aligned Depth Image
+      Name: Depth Image
       Topic:
-        Value: /camera/camera/aligned_depth_to_color/image_raw
+        Value: /camera/camera/depth/image_rect_raw
       Value: true
   Enabled: true
   Global Options:

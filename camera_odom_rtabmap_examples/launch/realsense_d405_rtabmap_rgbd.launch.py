@@ -24,7 +24,7 @@ def generate_launch_description():
                 "enable_gyro": False,
                 "enable_accel": False,
                 "enable_motion": False,
-                "align_depth.enable": True,
+                "align_depth.enable": False,
                 "enable_sync": True,
                 "rgb_camera.color_profile": "640,480,60",
                 "depth_module.depth_profile": "640,480,60",
@@ -34,7 +34,7 @@ def generate_launch_description():
 
     rgbd_remappings = [
         ("rgb/image", "/camera/camera/color/image_raw"),
-        ("depth/image", "/camera/camera/aligned_depth_to_color/image_raw"),
+        ("depth/image", "/camera/camera/depth/image_rect_raw"),
         ("rgb/camera_info", "/camera/camera/color/camera_info"),
         ("odom", "/odom"),
     ]
@@ -46,14 +46,9 @@ def generate_launch_description():
         parameters=[
             {
                 "frame_id": "camera_link",
-                "odom_frame_id": "odom",
-                "publish_tf": True,
-                "approx_sync": True,
-                "topic_queue_size": 10,
                 "sync_queue_size": 10,
                 "qos": 2,
                 "qos_camera_info": 2,
-                "subscribe_depth": True,
             }
         ],
         remappings=rgbd_remappings,
@@ -67,15 +62,9 @@ def generate_launch_description():
         parameters=[
             {
                 "frame_id": "camera_link",
-                "map_frame_id": "map",
-                "publish_tf": True,
-                "approx_sync": True,
-                "topic_queue_size": 10,
-                "sync_queue_size": 10,
                 "qos_image": 2,
                 "qos_camera_info": 2,
                 "qos_odom": 2,
-                "subscribe_depth": True,
                 "subscribe_odom_info": True,
             }
         ],
