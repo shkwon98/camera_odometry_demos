@@ -21,8 +21,8 @@ def test_camera_odometry_demos_is_a_package_collection():
 
     expected_packages = {
         "camera_odometry_demos": "camera_odometry_demos",
-        "camera_odometry_rtabmap_demos": "camera_odometry_rtabmap_demos",
-        "camera_odometry_isaac_ros_demos": "camera_odometry_isaac_ros_demos",
+        "rtabmap_demos": "rtabmap_demos",
+        "isaac_ros_vslam_demos": "isaac_ros_vslam_demos",
     }
 
     for directory_name, package_name in expected_packages.items():
@@ -39,13 +39,13 @@ def test_collection_package_depends_on_demo_packages():
 
     assert "Metapackage for camera odometry demo packages." in package_xml
     assert {
-        "camera_odometry_rtabmap_demos",
-        "camera_odometry_isaac_ros_demos",
+        "rtabmap_demos",
+        "isaac_ros_vslam_demos",
     }.issubset(_package_exec_depends(metapackage_root))
 
 
 def test_isaac_zed2i_visual_slam_example_is_packaged():
-    package_root = REPOSITORY_ROOT / "camera_odometry_isaac_ros_demos"
+    package_root = REPOSITORY_ROOT / "isaac_ros_vslam_demos"
     launch_file = package_root / "launch" / "zed2i_visual_slam.launch.py"
     specs_file = package_root / "config" / "zed2i_visual_slam_interface_specs.json"
 

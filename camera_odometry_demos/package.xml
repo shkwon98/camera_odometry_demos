@@ -10,8 +10,8 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>camera_odometry_rtabmap_demos</exec_depend>
-  <exec_depend>camera_odometry_isaac_ros_demos</exec_depend>
+  <exec_depend>rtabmap_demos</exec_depend>
+  <exec_depend>isaac_ros_vslam_demos</exec_depend>
 
   <test_depend>ament_cmake_pytest</test_depend>
 

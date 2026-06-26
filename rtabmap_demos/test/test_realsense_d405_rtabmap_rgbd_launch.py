@@ -20,8 +20,8 @@ def test_package_metadata_installs_launch_files():
     package_xml = (PACKAGE_ROOT / "package.xml").read_text()
     cmake_lists = (PACKAGE_ROOT / "CMakeLists.txt").read_text()
 
-    assert "<name>camera_odometry_rtabmap_demos</name>" in package_xml
-    assert "project(camera_odometry_rtabmap_demos)" in cmake_lists
+    assert "<name>rtabmap_demos</name>" in package_xml
+    assert "project(rtabmap_demos)" in cmake_lists
     for dependency in (
         "launch",
         "launch_ros",
@@ -34,8 +34,8 @@ def test_package_metadata_installs_launch_files():
     assert "install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})" in cmake_lists
 
 
-def test_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
-    launch_file = PACKAGE_ROOT / "launch" / "realsense_rtabmap_rgbd.launch.py"
+def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
+    launch_file = PACKAGE_ROOT / "launch" / "realsense_d405_rtabmap_rgbd.launch.py"
     launch_text = launch_file.read_text()
     entities = _load_launch(launch_file).entities
 
@@ -45,10 +45,7 @@ def test_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
         if isinstance(entity, DeclareLaunchArgument)
     ]
 
-    assert argument_names == [
-        "camera_name",
-        "camera_namespace",
-    ]
+    assert argument_names == []
     assert sum(isinstance(entity, IncludeLaunchDescription) for entity in entities) == 1
     assert any(
         isinstance(entity, Node)
@@ -64,11 +61,9 @@ def test_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
     )
 
     for realsense_argument in (
-        '"enable_color": "true"',
-        '"enable_depth": "true"',
+        '"device_type": "d405"',
         '"align_depth.enable": "true"',
         '"enable_sync": "true"',
-        '"enable_rgbd": "true"',
         '"rgb_camera.color_profile": "640x480x60"',
         '"depth_module.depth_profile": "640x480x60"',
     ):
@@ -96,6 +91,14 @@ def test_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
     assert "rs_launch.py" in launch_text
     assert '"-d"' in launch_text
     for removed_argument in (
+        "realsense_rtabmap_rgbd.launch.py",
+        '"camera_name": camera_name',
+        '"camera_namespace": camera_namespace',
+        '"enable_color": "true"',
+        '"enable_depth": "true"',
+        '"enable_rgbd": "true"',
+        'DeclareLaunchArgument("camera_name"',
+        'DeclareLaunchArgument("camera_namespace"',
         "rgb_camera_profile",
         "depth_module_profile",
         "align_depth_enable",

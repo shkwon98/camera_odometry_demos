@@ -1,15 +1,12 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    camera_name = LaunchConfiguration("camera_name")
-    camera_namespace = LaunchConfiguration("camera_namespace")
-
     realsense_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -21,15 +18,11 @@ def generate_launch_description():
             )
         ),
         launch_arguments={
-            "camera_name": camera_name,
-            "camera_namespace": camera_namespace,
-            "enable_color": "true",
-            "enable_depth": "true",
+            "device_type": "d555",
             "align_depth.enable": "true",
             "enable_sync": "true",
-            "enable_rgbd": "true",
-            "rgb_camera.color_profile": "640x480x60",
-            "depth_module.depth_profile": "640x480x60",
+            "rgb_camera.color_profile": "640x360x30",
+            "depth_module.depth_profile": "640x360x30",
         }.items(),
     )
 
@@ -76,8 +69,6 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("camera_name", default_value="camera"),
-            DeclareLaunchArgument("camera_namespace", default_value="camera"),
             realsense_launch,
             rgbd_odometry,
             rtabmap_slam,

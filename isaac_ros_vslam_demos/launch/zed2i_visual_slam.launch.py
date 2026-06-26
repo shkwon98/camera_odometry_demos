@@ -44,34 +44,8 @@ def _launch_setup(context, *args, **kwargs):
     pub_frame_rate = LaunchConfiguration("pub_frame_rate")
     grab_frame_rate = LaunchConfiguration("grab_frame_rate")
     grab_resolution = LaunchConfiguration("grab_resolution")
-    base_frame = LaunchConfiguration("base_frame")
-    camera_optical_frames = LaunchConfiguration("camera_optical_frames")
-    tracking_mode = LaunchConfiguration("tracking_mode")
-    imu_frame = LaunchConfiguration("imu_frame")
-    imu_topic = LaunchConfiguration("imu_topic")
-    imu_pub_rate = LaunchConfiguration("imu_pub_rate")
-    gyro_noise_density = LaunchConfiguration("gyro_noise_density")
-    gyro_random_walk = LaunchConfiguration("gyro_random_walk")
-    accel_noise_density = LaunchConfiguration("accel_noise_density")
-    accel_random_walk = LaunchConfiguration("accel_random_walk")
-    calibration_frequency = LaunchConfiguration("calibration_frequency")
-    enable_localization_n_mapping = LaunchConfiguration("enable_localization_n_mapping")
-    publish_map_to_odom_tf = LaunchConfiguration("publish_map_to_odom_tf")
-    publish_odom_to_base_tf = LaunchConfiguration("publish_odom_to_base_tf")
-    enable_ground_constraint_in_odometry = LaunchConfiguration(
-        "enable_ground_constraint_in_odometry"
-    )
-    enable_ground_constraint_in_slam = LaunchConfiguration(
-        "enable_ground_constraint_in_slam"
-    )
-    img_mask_top = LaunchConfiguration("img_mask_top")
-    img_mask_bottom = LaunchConfiguration("img_mask_bottom")
-    img_mask_left = LaunchConfiguration("img_mask_left")
-    img_mask_right = LaunchConfiguration("img_mask_right")
     sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
     image_jitter_threshold_ms = LaunchConfiguration("image_jitter_threshold_ms")
-    imu_jitter_threshold_ms = LaunchConfiguration("imu_jitter_threshold_ms")
-    enable_slam_visualization = LaunchConfiguration("enable_slam_visualization")
 
     zed_wrapper_share = get_package_share_directory("zed_wrapper")
     zed_common_config = os.path.join(zed_wrapper_share, "config", "common_stereo.yaml")
@@ -128,9 +102,8 @@ def _launch_setup(context, *args, **kwargs):
                 "pos_tracking.publish_tf": False,
                 "pos_tracking.publish_map_tf": False,
                 "pos_tracking.publish_odom_pose": False,
-                "sensors.publish_imu": True,
-                "sensors.publish_imu_tf": True,
-                "sensors.sensors_pub_rate": imu_pub_rate,
+                "sensors.publish_imu": False,
+                "sensors.publish_imu_tf": False,
             },
         ],
         remappings=[
@@ -146,33 +119,22 @@ def _launch_setup(context, *args, **kwargs):
         name="visual_slam_node",
         parameters=[
             {
-                "enable_image_denoising": False,
                 "rectified_images": True,
-                "enable_slam_visualization": enable_slam_visualization,
+                "enable_slam_visualization": False,
                 "enable_landmarks_view": False,
                 "enable_observations_view": False,
-                "camera_optical_frames": camera_optical_frames,
-                "base_frame": base_frame,
+                "camera_optical_frames": [
+                    "zed2i_left_camera_frame_optical",
+                    "zed2i_right_camera_frame_optical",
+                ],
+                "base_frame": "zed2i_camera_center",
                 "num_cameras": 2,
-                "tracking_mode": tracking_mode,
-                "imu_frame": imu_frame,
-                "gyro_noise_density": gyro_noise_density,
-                "gyro_random_walk": gyro_random_walk,
-                "accel_noise_density": accel_noise_density,
-                "accel_random_walk": accel_random_walk,
-                "calibration_frequency": calibration_frequency,
-                "enable_localization_n_mapping": enable_localization_n_mapping,
-                "publish_map_to_odom_tf": publish_map_to_odom_tf,
-                "publish_odom_to_base_tf": publish_odom_to_base_tf,
-                "enable_ground_constraint_in_odometry": enable_ground_constraint_in_odometry,
-                "enable_ground_constraint_in_slam": enable_ground_constraint_in_slam,
-                "img_mask_top": img_mask_top,
-                "img_mask_bottom": img_mask_bottom,
-                "img_mask_left": img_mask_left,
-                "img_mask_right": img_mask_right,
+                "tracking_mode": 0,
+                "enable_localization_n_mapping": False,
+                "publish_map_to_odom_tf": False,
+                "publish_odom_to_base_tf": True,
                 "sync_matching_threshold_ms": sync_matching_threshold_ms,
                 "image_jitter_threshold_ms": image_jitter_threshold_ms,
-                "imu_jitter_threshold_ms": imu_jitter_threshold_ms,
             }
         ],
         remappings=[
@@ -180,11 +142,10 @@ def _launch_setup(context, *args, **kwargs):
             ("/visual_slam/camera_info_0", "left/camera_info_rect"),
             ("/visual_slam/image_1", "right/image_rect_mono"),
             ("/visual_slam/camera_info_1", "right/camera_info_rect"),
-            ("visual_slam/imu", imu_topic),
         ],
     )
 
-    container = ComposableNodeContainer(
+    visual_slam_container = ComposableNodeContainer(
         package="rclcpp_components",
         executable="component_container_mt",
         name="zed2i_visual_slam_container",
@@ -228,7 +189,7 @@ def _launch_setup(context, *args, **kwargs):
         output="screen",
     )
 
-    return [robot_state_publisher, container]
+    return [robot_state_publisher, visual_slam_container]
 
 
 def generate_launch_description():
@@ -238,7 +199,7 @@ def generate_launch_description():
                 "interface_specs_file",
                 default_value=PathJoinSubstitution(
                     [
-                        FindPackageShare("camera_odometry_isaac_ros_demos"),
+                        FindPackageShare("isaac_ros_vslam_demos"),
                         "config",
                         "zed2i_visual_slam_interface_specs.json",
                     ]
@@ -247,36 +208,8 @@ def generate_launch_description():
             DeclareLaunchArgument("pub_frame_rate", default_value="30.0"),
             DeclareLaunchArgument("grab_frame_rate", default_value="30"),
             DeclareLaunchArgument("grab_resolution", default_value="VGA"),
-            DeclareLaunchArgument("base_frame", default_value="zed2i_camera_center"),
-            DeclareLaunchArgument(
-                "camera_optical_frames",
-                default_value=(
-                    "['zed2i_left_camera_frame_optical', "
-                    "'zed2i_right_camera_frame_optical']"
-                ),
-            ),
-            DeclareLaunchArgument("tracking_mode", default_value="1"),
-            DeclareLaunchArgument("imu_frame", default_value="zed2i_imu_link"),
-            DeclareLaunchArgument("imu_topic", default_value="zed_node/imu/data"),
-            DeclareLaunchArgument("imu_pub_rate", default_value="200.0"),
-            DeclareLaunchArgument("gyro_noise_density", default_value="0.000244"),
-            DeclareLaunchArgument("gyro_random_walk", default_value="0.000019393"),
-            DeclareLaunchArgument("accel_noise_density", default_value="0.001862"),
-            DeclareLaunchArgument("accel_random_walk", default_value="0.003"),
-            DeclareLaunchArgument("calibration_frequency", default_value="200.0"),
-            DeclareLaunchArgument("enable_localization_n_mapping", default_value="False"),
-            DeclareLaunchArgument("publish_map_to_odom_tf", default_value="False"),
-            DeclareLaunchArgument("publish_odom_to_base_tf", default_value="True"),
-            DeclareLaunchArgument("enable_ground_constraint_in_odometry", default_value="False"),
-            DeclareLaunchArgument("enable_ground_constraint_in_slam", default_value="False"),
-            DeclareLaunchArgument("img_mask_top", default_value="0"),
-            DeclareLaunchArgument("img_mask_bottom", default_value="0"),
-            DeclareLaunchArgument("img_mask_left", default_value="0"),
-            DeclareLaunchArgument("img_mask_right", default_value="0"),
-            DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0"),
             DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0"),
-            DeclareLaunchArgument("imu_jitter_threshold_ms", default_value="10.0"),
-            DeclareLaunchArgument("enable_slam_visualization", default_value="False"),
+            DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0"),
             OpaqueFunction(function=_launch_setup),
         ]
     )

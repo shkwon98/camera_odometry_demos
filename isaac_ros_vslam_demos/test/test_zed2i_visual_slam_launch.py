@@ -20,7 +20,7 @@ def test_package_metadata_installs_launch_and_config_files():
     package_xml = (PACKAGE_ROOT / "package.xml").read_text()
     cmake_lists = (PACKAGE_ROOT / "CMakeLists.txt").read_text()
 
-    assert "<name>camera_odometry_isaac_ros_demos</name>" in package_xml
+    assert "<name>isaac_ros_vslam_demos</name>" in package_xml
     for dependency in (
         "isaac_ros_image_proc",
         "isaac_ros_visual_slam",
@@ -56,7 +56,7 @@ def test_zed2i_specs_select_zed2i_model_and_frames():
     assert hd720_specs["camera_resolution"] == {"width": 1280, "height": 720}
 
 
-def test_zed2i_visual_slam_launch_builds_vga_vio_odometry_graph():
+def test_zed2i_visual_slam_launch_builds_vga_stereo_odometry_graph():
     launch_file = PACKAGE_ROOT / "launch" / "zed2i_visual_slam.launch.py"
     launch_text = launch_file.read_text()
     entities = _load_launch(launch_file).entities
@@ -67,29 +67,14 @@ def test_zed2i_visual_slam_launch_builds_vga_vio_odometry_graph():
         if isinstance(entity, DeclareLaunchArgument)
     ]
 
-    assert argument_names[:5] == [
+    assert argument_names == [
         "interface_specs_file",
         "pub_frame_rate",
         "grab_frame_rate",
         "grab_resolution",
-        "base_frame",
+        "image_jitter_threshold_ms",
+        "sync_matching_threshold_ms",
     ]
-    assert "camera_optical_frames" in argument_names
-    assert "tracking_mode" in argument_names
-    assert "imu_frame" in argument_names
-    assert "imu_topic" in argument_names
-    assert "imu_pub_rate" in argument_names
-    assert "enable_localization_n_mapping" in argument_names
-    assert "publish_map_to_odom_tf" in argument_names
-    assert "publish_odom_to_base_tf" in argument_names
-    assert "enable_ground_constraint_in_odometry" in argument_names
-    assert "enable_ground_constraint_in_slam" in argument_names
-    assert "img_mask_top" in argument_names
-    assert "img_mask_bottom" in argument_names
-    assert "img_mask_left" in argument_names
-    assert "img_mask_right" in argument_names
-    assert "sync_matching_threshold_ms" in argument_names
-    assert "image_jitter_threshold_ms" in argument_names
     assert sum(isinstance(entity, IncludeLaunchDescription) for entity in entities) == 0
 
     for expected_text in (
@@ -98,44 +83,30 @@ def test_zed2i_visual_slam_launch_builds_vga_vio_odometry_graph():
         "nvidia::isaac_ros::visual_slam::VisualSlamNode",
         "nvidia::isaac_ros::image_proc::ImageFormatConverterNode",
         "component_container_mt",
+        "visual_slam_container = ComposableNodeContainer",
         '"general.grab_resolution": grab_resolution',
         '"general.pub_resolution": "NATIVE"',
         '"depth.depth_mode": "NONE"',
-        '"sensors.publish_imu": True',
-        '"sensors.publish_imu_tf": True',
-        '"sensors.sensors_pub_rate": imu_pub_rate',
-        '"tracking_mode": tracking_mode',
-        '"imu_frame": imu_frame',
-        '"enable_localization_n_mapping": enable_localization_n_mapping',
-        '"publish_map_to_odom_tf": publish_map_to_odom_tf',
-        '"publish_odom_to_base_tf": publish_odom_to_base_tf',
-        '"enable_ground_constraint_in_odometry": enable_ground_constraint_in_odometry',
-        '"enable_ground_constraint_in_slam": enable_ground_constraint_in_slam',
-        '"img_mask_top": img_mask_top',
-        '"img_mask_bottom": img_mask_bottom',
-        '"img_mask_left": img_mask_left',
-        '"img_mask_right": img_mask_right',
+        '"sensors.publish_imu": False',
+        '"sensors.publish_imu_tf": False',
+        '"tracking_mode": 0',
+        '"base_frame": "zed2i_camera_center"',
+        '"camera_optical_frames": [',
+        '"enable_localization_n_mapping": False',
+        '"publish_map_to_odom_tf": False',
+        '"publish_odom_to_base_tf": True',
         '"sync_matching_threshold_ms": sync_matching_threshold_ms',
-        '"calibration_frequency": calibration_frequency',
-        '("visual_slam/imu", imu_topic)',
         "zed_left_rgb_converter",
         "vslam_left_mono_converter",
         "zed2i_visual_slam_interface_specs.json",
-        'FindPackageShare("camera_odometry_isaac_ros_demos")',
+        'FindPackageShare("isaac_ros_vslam_demos")',
         'DeclareLaunchArgument("grab_resolution", default_value="VGA")',
-        'DeclareLaunchArgument("tracking_mode", default_value="1")',
-        'DeclareLaunchArgument("enable_localization_n_mapping", default_value="False")',
-        'DeclareLaunchArgument("publish_map_to_odom_tf", default_value="False")',
-        'DeclareLaunchArgument("publish_odom_to_base_tf", default_value="True")',
-        'DeclareLaunchArgument("enable_ground_constraint_in_odometry", default_value="False")',
-        'DeclareLaunchArgument("enable_ground_constraint_in_slam", default_value="False")',
-        'DeclareLaunchArgument("img_mask_bottom", default_value="0")',
         'DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0")',
-        'DeclareLaunchArgument("imu_frame", default_value="zed2i_imu_link")',
-        'DeclareLaunchArgument("imu_topic", default_value="zed_node/imu/data")',
+        'DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0")',
         "zed2i_camera_center",
         "zed2i_left_camera_frame_optical",
         "zed2i_right_camera_frame_optical",
+        "return [robot_state_publisher, visual_slam_container]",
     ):
         assert expected_text in launch_text
 
@@ -144,5 +115,45 @@ def test_zed2i_visual_slam_launch_builds_vga_vio_odometry_graph():
         "zed_stereo_rect,visual_slam",
         "image_format_node_left",
         "image_format_node_right",
+        '"imu_frame":',
+        '"gyro_noise_density":',
+        '"gyro_random_walk":',
+        '"accel_noise_density":',
+        '"accel_random_walk":',
+        '"calibration_frequency":',
+        '"imu_jitter_threshold_ms":',
+        '"img_mask_top":',
+        '"img_mask_bottom":',
+        '"img_mask_left":',
+        '"img_mask_right":',
+        '"enable_image_denoising": False',
+        '"enable_ground_constraint_in_odometry": False',
+        '"enable_ground_constraint_in_slam": False',
+        "\n    container = ComposableNodeContainer",
+        '("visual_slam/imu",',
+        'DeclareLaunchArgument("enable_ground_constraint_in_odometry"',
+        'DeclareLaunchArgument("base_frame"',
+        'DeclareLaunchArgument("camera_optical_frames"',
+        'DeclareLaunchArgument("tracking_mode"',
+        'DeclareLaunchArgument("imu_frame"',
+        'DeclareLaunchArgument("imu_topic"',
+        'DeclareLaunchArgument("publish_imu"',
+        'DeclareLaunchArgument("publish_imu_tf"',
+        'DeclareLaunchArgument("imu_pub_rate"',
+        'DeclareLaunchArgument("gyro_noise_density"',
+        'DeclareLaunchArgument("gyro_random_walk"',
+        'DeclareLaunchArgument("accel_noise_density"',
+        'DeclareLaunchArgument("accel_random_walk"',
+        'DeclareLaunchArgument("calibration_frequency"',
+        'DeclareLaunchArgument("enable_localization_n_mapping"',
+        'DeclareLaunchArgument("publish_map_to_odom_tf"',
+        'DeclareLaunchArgument("publish_odom_to_base_tf"',
+        'DeclareLaunchArgument("enable_ground_constraint_in_slam"',
+        'DeclareLaunchArgument("img_mask_top"',
+        'DeclareLaunchArgument("img_mask_bottom"',
+        'DeclareLaunchArgument("img_mask_left"',
+        'DeclareLaunchArgument("img_mask_right"',
+        'DeclareLaunchArgument("imu_jitter_threshold_ms"',
+        'DeclareLaunchArgument("enable_slam_visualization"',
     ):
         assert removed_text not in launch_text
