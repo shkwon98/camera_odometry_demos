@@ -8,11 +8,13 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import ReliabilityPolicy
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import Imu
 
 
 class RestampRealSenseRgbd(Node):
     def __init__(self):
         super().__init__("restamp_realsense_rgbd")
+        self.declare_parameter("enable_imu", False)
 
         self._qos = QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
@@ -35,6 +37,12 @@ class RestampRealSenseRgbd(Node):
             self._topic("color_info_in", "/camera/camera/color/camera_info"),
             self._topic("color_info_out", "/camera_odom_d555/color/camera_info"),
         )
+        if self.get_parameter("enable_imu").value:
+            self._relay(
+                Imu,
+                self._topic("imu_in", "/camera_odom_d555/imu/data_filtered"),
+                self._topic("imu_out", "/camera_odom_d555/imu/data"),
+            )
 
     def _topic(self, name, default_value):
         self.declare_parameter(name, default_value)

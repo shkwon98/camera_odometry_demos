@@ -13,6 +13,8 @@ if(BUILD_TESTING)
                         test/test_realsense_d405_rtabmap_rgbd_launch.py)
   ament_add_pytest_test(test_realsense_d555_rtabmap_rgbd_launch
                         test/test_realsense_d555_rtabmap_rgbd_launch.py)
+  ament_add_pytest_test(test_realsense_d555_rtabmap_rgbd_imu_launch
+                        test/test_realsense_d555_rtabmap_rgbd_imu_launch.py)
 endif()
 
 ament_package()

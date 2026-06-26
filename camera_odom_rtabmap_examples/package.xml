@@ -12,6 +12,7 @@
 
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>imu_filter_madgwick</exec_depend>
   <exec_depend>rclpy</exec_depend>
   <exec_depend>realsense2_camera</exec_depend>
   <exec_depend>rtabmap_odom</exec_depend>
