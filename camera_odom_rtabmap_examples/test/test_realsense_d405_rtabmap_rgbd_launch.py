@@ -20,8 +20,8 @@ def test_package_metadata_installs_launch_files():
     package_xml = (PACKAGE_ROOT / "package.xml").read_text()
     cmake_lists = (PACKAGE_ROOT / "CMakeLists.txt").read_text()
 
-    assert "<name>rtabmap_demos</name>" in package_xml
-    assert "project(rtabmap_demos)" in cmake_lists
+    assert "<name>camera_odom_rtabmap_examples</name>" in package_xml
+    assert "project(camera_odom_rtabmap_examples)" in cmake_lists
     for dependency in (
         "launch",
         "launch_ros",
@@ -92,6 +92,7 @@ def test_d405_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
     assert '"-d"' in launch_text
     for removed_argument in (
         "realsense_rtabmap_rgbd.launch.py",
+        '"initial_reset"',
         '"camera_name": camera_name',
         '"camera_namespace": camera_namespace',
         '"enable_color": "true"',

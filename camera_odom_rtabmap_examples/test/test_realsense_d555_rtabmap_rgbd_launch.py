@@ -80,6 +80,7 @@ def test_d555_rtabmap_rgbd_launch_composes_realsense_odometry_and_slam():
     assert '"-d"' in launch_text
 
     for removed_argument in (
+        '"initial_reset"',
         '"camera_name": camera_name',
         '"camera_namespace": camera_namespace',
         '"enable_color": "true"',

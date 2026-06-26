@@ -1,20 +1,17 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rtabmap_demos</name>
+  <name>camera_odom_examples</name>
   <version>0.0.0</version>
-  <description>RTAB-Map launch demos for camera odometry experiments.</description>
+  <description>Metapackage for camera odometry example packages.</description>
   <maintainer email="shkwon@tommoro.ai">Sunghyun Kwon</maintainer>
   <license>Proprietary</license>
   <author email="shkwon@tommoro.ai">Sunghyun Kwon</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>launch</exec_depend>
-  <exec_depend>launch_ros</exec_depend>
-  <exec_depend>realsense2_camera</exec_depend>
-  <exec_depend>rtabmap_odom</exec_depend>
-  <exec_depend>rtabmap_slam</exec_depend>
+  <exec_depend>camera_odom_rtabmap_examples</exec_depend>
+  <exec_depend>camera_odom_isaac_ros_examples</exec_depend>
 
   <test_depend>ament_cmake_pytest</test_depend>
 

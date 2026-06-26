@@ -1,4 +1,4 @@
-# isaac_ros_vslam_demos
+# camera_odom_isaac_ros_examples
 
 Host-native Isaac ROS camera odometry demos.
 
@@ -10,7 +10,7 @@ Run from a sourced ROS 2 environment:
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 launch isaac_ros_vslam_demos zed2i_visual_slam.launch.py
+ros2 launch camera_odom_isaac_ros_examples zed2i_visual_slam.launch.py
 ```
 
 The launch file starts the ZED2i wrapper and Isaac ROS Visual SLAM in one
@@ -59,9 +59,9 @@ For more visual features, try HD720. It uses more compute, so confirm image rate
 and jitter after switching:
 
 ```bash
-ros2 launch isaac_ros_vslam_demos zed2i_visual_slam.launch.py \
+ros2 launch camera_odom_isaac_ros_examples zed2i_visual_slam.launch.py \
   grab_resolution:=HD720 \
-  interface_specs_file:=$(ros2 pkg prefix isaac_ros_vslam_demos)/share/isaac_ros_vslam_demos/config/zed2i_hd720_visual_slam_interface_specs.json
+  interface_specs_file:=$(ros2 pkg prefix camera_odom_isaac_ros_examples)/share/camera_odom_isaac_ros_examples/config/zed2i_hd720_visual_slam_interface_specs.json
 ```
 
 ## RealSense D405 RGB-D Odometry
@@ -73,7 +73,7 @@ and aligned depth from `realsense2_camera`; no IMU is used.
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 launch isaac_ros_vslam_demos realsense_d405_visual_slam.launch.py
+ros2 launch camera_odom_isaac_ros_examples realsense_d405_visual_slam.launch.py
 ```
 
 Launch arguments:
@@ -111,7 +111,7 @@ bandwidth, or intentionally relax `image_jitter_threshold_ms` only for slow
 debug runs:
 
 ```bash
-ros2 launch isaac_ros_vslam_demos realsense_d405_visual_slam.launch.py \
+ros2 launch camera_odom_isaac_ros_examples realsense_d405_visual_slam.launch.py \
   depth_profile:=424,240,30 \
   color_profile:=424,240,30
 ```
@@ -125,7 +125,7 @@ The D555 launch also uses Isaac ROS Visual SLAM RGB-D mode through
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 launch isaac_ros_vslam_demos realsense_d555_visual_slam.launch.py
+ros2 launch camera_odom_isaac_ros_examples realsense_d555_visual_slam.launch.py
 ```
 
 Launch arguments:

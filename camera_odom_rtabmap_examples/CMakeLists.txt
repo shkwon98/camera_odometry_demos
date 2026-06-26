@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(rtabmap_demos)
+project(camera_odom_rtabmap_examples)
 
 find_package(ament_cmake REQUIRED)
 

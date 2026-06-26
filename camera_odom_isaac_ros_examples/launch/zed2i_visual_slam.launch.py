@@ -199,7 +199,7 @@ def generate_launch_description():
                 "interface_specs_file",
                 default_value=PathJoinSubstitution(
                     [
-                        FindPackageShare("isaac_ros_vslam_demos"),
+                        FindPackageShare("camera_odom_isaac_ros_examples"),
                         "config",
                         "zed2i_visual_slam_interface_specs.json",
                     ]

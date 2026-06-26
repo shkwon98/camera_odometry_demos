@@ -15,14 +15,14 @@ def _package_exec_depends(package_root: Path) -> set[str]:
     return {element.text for element in root.findall("exec_depend")}
 
 
-def test_camera_odometry_demos_is_a_package_collection():
+def test_camera_odom_examples_is_a_package_collection():
     assert not (REPOSITORY_ROOT / "package.xml").exists()
     assert not (REPOSITORY_ROOT / "CMakeLists.txt").exists()
 
     expected_packages = {
-        "camera_odometry_demos": "camera_odometry_demos",
-        "rtabmap_demos": "rtabmap_demos",
-        "isaac_ros_vslam_demos": "isaac_ros_vslam_demos",
+        "camera_odom_examples": "camera_odom_examples",
+        "camera_odom_rtabmap_examples": "camera_odom_rtabmap_examples",
+        "camera_odom_isaac_ros_examples": "camera_odom_isaac_ros_examples",
     }
 
     for directory_name, package_name in expected_packages.items():
@@ -34,18 +34,18 @@ def test_camera_odometry_demos_is_a_package_collection():
 
 
 def test_collection_package_depends_on_demo_packages():
-    metapackage_root = REPOSITORY_ROOT / "camera_odometry_demos"
+    metapackage_root = REPOSITORY_ROOT / "camera_odom_examples"
     package_xml = (metapackage_root / "package.xml").read_text()
 
-    assert "Metapackage for camera odometry demo packages." in package_xml
+    assert "Metapackage for camera odometry example packages." in package_xml
     assert {
-        "rtabmap_demos",
-        "isaac_ros_vslam_demos",
+        "camera_odom_rtabmap_examples",
+        "camera_odom_isaac_ros_examples",
     }.issubset(_package_exec_depends(metapackage_root))
 
 
 def test_isaac_zed2i_visual_slam_example_is_packaged():
-    package_root = REPOSITORY_ROOT / "isaac_ros_vslam_demos"
+    package_root = REPOSITORY_ROOT / "camera_odom_isaac_ros_examples"
     launch_file = package_root / "launch" / "zed2i_visual_slam.launch.py"
     specs_file = package_root / "config" / "zed2i_visual_slam_interface_specs.json"
 

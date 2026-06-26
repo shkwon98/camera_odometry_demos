@@ -20,7 +20,7 @@ def test_package_metadata_installs_launch_and_config_files():
     package_xml = (PACKAGE_ROOT / "package.xml").read_text()
     cmake_lists = (PACKAGE_ROOT / "CMakeLists.txt").read_text()
 
-    assert "<name>isaac_ros_vslam_demos</name>" in package_xml
+    assert "<name>camera_odom_isaac_ros_examples</name>" in package_xml
     for dependency in (
         "isaac_ros_image_proc",
         "isaac_ros_visual_slam",
@@ -99,7 +99,7 @@ def test_zed2i_visual_slam_launch_builds_vga_stereo_odometry_graph():
         "zed_left_rgb_converter",
         "vslam_left_mono_converter",
         "zed2i_visual_slam_interface_specs.json",
-        'FindPackageShare("isaac_ros_vslam_demos")',
+        'FindPackageShare("camera_odom_isaac_ros_examples")',
         'DeclareLaunchArgument("grab_resolution", default_value="VGA")',
         'DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0")',
         'DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0")',
