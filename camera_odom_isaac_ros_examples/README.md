@@ -2,7 +2,38 @@
 
 Host-native Isaac ROS camera odometry demos.
 
-## ZED2i Stereo Odometry
+## Supported launch groups
+
+These examples follow the input modes used by the local Isaac ROS Visual SLAM
+launch files:
+
+```text
+RGB-D:
+  realsense_d405_vslam_rgbd.launch.py
+  realsense_d555_vslam_rgbd.launch.py
+  zed2i_vslam_rgbd.launch.py
+
+Stereo:
+  realsense_d405_vslam_stereo.launch.py
+  realsense_d555_vslam_stereo.launch.py
+  zed2i_vslam_stereo.launch.py
+
+Stereo + IMU:
+  realsense_d555_vslam_stereo_imu.launch.py
+  zed2i_vslam_stereo_imu.launch.py
+```
+
+The older `realsense_d405_visual_slam.launch.py`,
+`realsense_d555_visual_slam.launch.py`, and `zed2i_visual_slam.launch.py` names
+were removed because they overlap with the explicit RGB-D or stereo launch
+files.
+
+Single RGB, RGB + IMU, and RGB-D + IMU launch groups are intentionally not
+provided here because the installed Isaac ROS examples expose RGB-D mode
+(`tracking_mode:=2`) and stereo/VIO modes (`tracking_mode:=0/1`), not those
+single-RGB combinations.
+
+## ZED2i Odometry
 
 Run from a sourced ROS 2 environment:
 
@@ -10,11 +41,18 @@ Run from a sourced ROS 2 environment:
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 launch camera_odom_isaac_ros_examples zed2i_visual_slam.launch.py
+ros2 launch camera_odom_isaac_ros_examples zed2i_vslam_rgbd.launch.py
+ros2 launch camera_odom_isaac_ros_examples zed2i_vslam_stereo.launch.py
 ```
 
-The launch file starts the ZED2i wrapper and Isaac ROS Visual SLAM in one
-component container. Launch arguments:
+To fuse the ZED2i IMU:
+
+```bash
+ros2 launch camera_odom_isaac_ros_examples zed2i_vslam_stereo_imu.launch.py
+```
+
+The launch files start the ZED2i wrapper and Isaac ROS Visual SLAM in one
+component container. Common launch arguments:
 
 ```text
 interface_specs_file:=<package config>/zed2i_visual_slam_interface_specs.json
@@ -25,7 +63,13 @@ image_jitter_threshold_ms:=34.0
 sync_matching_threshold_ms:=5.0
 ```
 
-Fixed internal settings:
+The RGB-D launch also accepts:
+
+```text
+depth_mode:=NEURAL
+```
+
+Fixed internal settings for the stereo launch:
 
 ```text
 tracking_mode:=0
@@ -41,9 +85,10 @@ camera_optical_frames:=['zed2i_left_camera_frame_optical', 'zed2i_right_camera_f
 The interface specs use `672x376`, matching the ZED2i VGA output. Isaac ROS
 image converter memory pools must match the actual incoming image size.
 
-The default mode is stereo visual odometry-only. It does not fuse the ZED2i IMU,
-does not build a SLAM map, and publishes the pose to
-`/visual_slam/tracking/odometry`. In RViz, use `odom` as the fixed frame.
+The RGB-D and stereo launches do not fuse the ZED2i IMU, do not build a SLAM
+map, and publish the pose to `/visual_slam/tracking/odometry`. In RViz, use
+`odom` as the fixed frame. `zed2i_vslam_rgbd_imu.launch.py` is intentionally not
+provided; use `zed2i_vslam_stereo_imu.launch.py` for ZED2i IMU fusion.
 
 ## Drift checks
 
@@ -59,7 +104,7 @@ For more visual features, try HD720. It uses more compute, so confirm image rate
 and jitter after switching:
 
 ```bash
-ros2 launch camera_odom_isaac_ros_examples zed2i_visual_slam.launch.py \
+ros2 launch camera_odom_isaac_ros_examples zed2i_vslam_stereo.launch.py \
   grab_resolution:=HD720 \
   interface_specs_file:=$(ros2 pkg prefix camera_odom_isaac_ros_examples)/share/camera_odom_isaac_ros_examples/config/zed2i_hd720_visual_slam_interface_specs.json
 ```
@@ -73,16 +118,22 @@ and aligned depth from `realsense2_camera`; no IMU is used.
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 launch camera_odom_isaac_ros_examples realsense_d405_visual_slam.launch.py
+ros2 launch camera_odom_isaac_ros_examples realsense_d405_vslam_rgbd.launch.py
+```
+
+The D405 stereo-only mode uses the left/right infrared streams:
+
+```bash
+ros2 launch camera_odom_isaac_ros_examples realsense_d405_vslam_stereo.launch.py
 ```
 
 Launch arguments:
 
 ```text
-depth_profile:=640,360,60
-color_profile:=640,360,60
+depth_profile:=640,360,30
+color_profile:=848,480,30
 emitter_enabled:=1
-image_jitter_threshold_ms:=20.0
+image_jitter_threshold_ms:=34.0
 sync_matching_threshold_ms:=10.0
 ```
 
@@ -106,15 +157,18 @@ ros2 topic hz /visual_slam/tracking/odometry --window 100
 ```
 
 If Visual SLAM reports a frame delta near `100 ms`, the camera stream is only
-arriving at about 10 Hz. Check the actual rates and lower resolution, fix USB
-bandwidth, or intentionally relax `image_jitter_threshold_ms` only for slow
-debug runs:
+arriving at about 10 Hz. Check the actual rates and USB bandwidth, or
+intentionally relax `image_jitter_threshold_ms` only for slow debug runs. If the
+RealSense node reports `overflow video frame detected`, first try disabling the
+projector or moving the camera to a direct USB 3 port:
 
 ```bash
-ros2 launch camera_odom_isaac_ros_examples realsense_d405_visual_slam.launch.py \
-  depth_profile:=424,240,30 \
-  color_profile:=424,240,30
+ros2 launch camera_odom_isaac_ros_examples realsense_d405_vslam_rgbd.launch.py \
+  emitter_enabled:=0
 ```
+
+Avoid `depth_profile:=424,240,30` with `align_depth.enable:=True` on this setup;
+it has been observed to abort `realsense2_camera_node` during startup.
 
 ## RealSense D555 RGB-D Odometry
 
@@ -125,15 +179,25 @@ The D555 launch also uses Isaac ROS Visual SLAM RGB-D mode through
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 
-ros2 launch camera_odom_isaac_ros_examples realsense_d555_visual_slam.launch.py
+ros2 launch camera_odom_isaac_ros_examples realsense_d555_vslam_rgbd.launch.py
 ```
+
+D555 stereo-only and stereo + IMU modes use the infrared streams:
+
+```bash
+ros2 launch camera_odom_isaac_ros_examples realsense_d555_vslam_stereo.launch.py
+ros2 launch camera_odom_isaac_ros_examples realsense_d555_vslam_stereo_imu.launch.py
+```
+
+The D555 stereo launch files restamp the infrared image and camera info topics
+before Visual SLAM. This avoids D555 hardware timestamp ordering issues such as
+`Frame timestamps must be strictly increasing`.
 
 Launch arguments:
 
 ```text
 depth_profile:=640,360,30
 color_profile:=640,360,30
-emitter_enabled:=1
 image_jitter_threshold_ms:=34.0
 sync_matching_threshold_ms:=10.0
 ```

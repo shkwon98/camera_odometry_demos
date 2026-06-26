@@ -4,7 +4,9 @@ project(camera_odom_isaac_ros_examples)
 find_package(ament_cmake REQUIRED)
 
 install(DIRECTORY config launch rviz DESTINATION share/${PROJECT_NAME})
-install(PROGRAMS scripts/restamp_realsense_rgbd.py
+install(PROGRAMS
+        scripts/restamp_realsense_rgbd.py
+        scripts/restamp_realsense_stereo.py
         DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

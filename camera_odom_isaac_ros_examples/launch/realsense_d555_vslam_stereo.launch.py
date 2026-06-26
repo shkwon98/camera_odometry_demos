@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import ComposableNodeContainer, Node
@@ -7,9 +7,8 @@ from launch_ros.descriptions import ComposableNode
 from launch_ros.substitutions import FindPackageShare
 
 
-def _launch_setup(context, *args, **kwargs):
-    depth_profile = LaunchConfiguration("depth_profile")
-    color_profile = LaunchConfiguration("color_profile")
+def generate_launch_description():
+    infra_profile = LaunchConfiguration("infra_profile")
     image_jitter_threshold_ms = LaunchConfiguration("image_jitter_threshold_ms")
     sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
 
@@ -22,34 +21,38 @@ def _launch_setup(context, *args, **kwargs):
         parameters=[
             {
                 "device_type": "d555",
-                "enable_infra": False,
-                "enable_infra1": False,
-                "enable_infra2": False,
+                "enable_infra1": True,
+                "enable_infra2": True,
+                "enable_color": False,
+                "enable_depth": False,
+                "enable_sync": True,
+                "depth_module.emitter_enabled": False,
+                "depth_module.infra_profile": infra_profile,
+                "depth_module.profile": infra_profile,
                 "enable_gyro": False,
                 "enable_accel": False,
-                "enable_motion": False,
-                "align_depth.enable": True,
-                "enable_sync": True,
-                "depth_module.emitter_enabled": True,
-                "depth_module.depth_profile": depth_profile,
-                "rgb_camera.color_profile": color_profile,
+                "gyro_fps": 200,
+                "accel_fps": 200,
+                "unite_imu_method": 0,
             }
         ],
     )
 
-    restamp_rgbd = Node(
+    restamp_stereo = Node(
         package="camera_odom_isaac_ros_examples",
-        executable="restamp_realsense_rgbd.py",
-        name="restamp_realsense_rgbd",
+        executable="restamp_realsense_stereo.py",
+        name="restamp_realsense_stereo",
         output="screen",
         parameters=[
             {
-                "color_image_in": "/camera/color/image_raw",
-                "color_image_out": "/camera_odom_d555/color/image_raw",
-                "depth_image_in": "/camera/aligned_depth_to_color/image_raw",
-                "depth_image_out": "/camera_odom_d555/aligned_depth_to_color/image_raw",
-                "color_info_in": "/camera/color/camera_info",
-                "color_info_out": "/camera_odom_d555/color/camera_info",
+                "left_image_in": "/camera/infra1/image_rect_raw",
+                "left_image_out": "/camera_odom_d555/infra1/image_rect_raw",
+                "left_info_in": "/camera/infra1/camera_info",
+                "left_info_out": "/camera_odom_d555/infra1/camera_info",
+                "right_image_in": "/camera/infra2/image_rect_raw",
+                "right_image_out": "/camera_odom_d555/infra2/image_rect_raw",
+                "right_info_in": "/camera/infra2/camera_info",
+                "right_info_out": "/camera_odom_d555/infra2/camera_info",
             }
         ],
     )
@@ -60,44 +63,42 @@ def _launch_setup(context, *args, **kwargs):
         name="visual_slam_node",
         parameters=[
             {
-                "tracking_mode": 2,
-                "depth_scale_factor": 1000.0,
-                "rectified_images": False,
+                "tracking_mode": 0,
+                "rectified_images": True,
                 "image_jitter_threshold_ms": image_jitter_threshold_ms,
                 "sync_matching_threshold_ms": sync_matching_threshold_ms,
                 "base_frame": "camera_link",
-                "camera_optical_frames": ["camera_color_optical_frame"],
+                "camera_optical_frames": [
+                    "camera_infra1_optical_frame",
+                    "camera_infra2_optical_frame",
+                ],
                 "enable_slam_visualization": False,
                 "enable_landmarks_view": False,
                 "enable_observations_view": False,
                 "enable_localization_n_mapping": False,
                 "publish_map_to_odom_tf": False,
                 "publish_odom_to_base_tf": True,
-                "min_num_images": 1,
-                "num_cameras": 1,
-                "depth_camera_id": 0,
+                "min_num_images": 2,
+                "num_cameras": 2,
             }
         ],
         remappings=[
-            ("visual_slam/image_0", "/camera_odom_d555/color/image_raw"),
-            ("visual_slam/camera_info_0", "/camera_odom_d555/color/camera_info"),
-            ("visual_slam/depth_0", "/camera_odom_d555/aligned_depth_to_color/image_raw"),
+            ("visual_slam/image_0", "/camera_odom_d555/infra1/image_rect_raw"),
+            ("visual_slam/camera_info_0", "/camera_odom_d555/infra1/camera_info"),
+            ("visual_slam/image_1", "/camera_odom_d555/infra2/image_rect_raw"),
+            ("visual_slam/camera_info_1", "/camera_odom_d555/infra2/camera_info"),
         ],
     )
 
     visual_slam_container = ComposableNodeContainer(
         package="rclcpp_components",
         executable="component_container_mt",
-        name="realsense_d555_visual_slam_container",
+        name="realsense_d555_vslam_stereo_container",
         namespace="",
         composable_node_descriptions=[visual_slam],
         output="screen",
     )
 
-    return [realsense_camera, restamp_rgbd, visual_slam_container]
-
-
-def generate_launch_description():
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -109,7 +110,7 @@ def generate_launch_description():
                 [
                     FindPackageShare("camera_odom_isaac_ros_examples"),
                     "rviz",
-                    "realsense_d555_visual_slam.rviz",
+                    "realsense_d555_vslam_stereo.rviz",
                 ]
             ),
         ],
@@ -118,12 +119,13 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("depth_profile", default_value="640,360,30"),
-            DeclareLaunchArgument("color_profile", default_value="640,360,30"),
+            DeclareLaunchArgument("infra_profile", default_value="640,360,30"),
             DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0"),
-            DeclareLaunchArgument("sync_matching_threshold_ms", default_value="10.0"),
+            DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0"),
             DeclareLaunchArgument("launch_rviz", default_value="true"),
-            OpaqueFunction(function=_launch_setup),
+            realsense_camera,
+            restamp_stereo,
+            visual_slam_container,
             rviz,
         ]
     )

@@ -45,8 +45,8 @@ def _launch_setup(context, *args, **kwargs):
     pub_frame_rate = LaunchConfiguration("pub_frame_rate")
     grab_frame_rate = LaunchConfiguration("grab_frame_rate")
     grab_resolution = LaunchConfiguration("grab_resolution")
-    sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
     image_jitter_threshold_ms = LaunchConfiguration("image_jitter_threshold_ms")
+    sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
 
     zed_wrapper_share = get_package_share_directory("zed_wrapper")
     zed_common_config = os.path.join(zed_wrapper_share, "config", "common_stereo.yaml")
@@ -139,17 +139,17 @@ def _launch_setup(context, *args, **kwargs):
             }
         ],
         remappings=[
-            ("/visual_slam/image_0", "left/image_rect_mono"),
-            ("/visual_slam/camera_info_0", "left/camera_info_rect"),
-            ("/visual_slam/image_1", "right/image_rect_mono"),
-            ("/visual_slam/camera_info_1", "right/camera_info_rect"),
+            ("visual_slam/image_0", "left/image_rect_mono"),
+            ("visual_slam/camera_info_0", "left/camera_info_rect"),
+            ("visual_slam/image_1", "right/image_rect_mono"),
+            ("visual_slam/camera_info_1", "right/camera_info_rect"),
         ],
     )
 
     visual_slam_container = ComposableNodeContainer(
         package="rclcpp_components",
         executable="component_container_mt",
-        name="zed2i_visual_slam_container",
+        name="zed2i_vslam_stereo_container",
         namespace="",
         composable_node_descriptions=[
             zed_camera,
@@ -205,7 +205,7 @@ def generate_launch_description():
                 [
                     FindPackageShare("camera_odom_isaac_ros_examples"),
                     "rviz",
-                    "zed2i_visual_slam.rviz",
+                    "zed2i_vslam_stereo.rviz",
                 ]
             ),
         ],

@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import ComposableNodeContainer, Node
@@ -7,7 +7,7 @@ from launch_ros.descriptions import ComposableNode
 from launch_ros.substitutions import FindPackageShare
 
 
-def _launch_setup(context, *args, **kwargs):
+def generate_launch_description():
     depth_profile = LaunchConfiguration("depth_profile")
     color_profile = LaunchConfiguration("color_profile")
     emitter_enabled = LaunchConfiguration("emitter_enabled")
@@ -23,6 +23,14 @@ def _launch_setup(context, *args, **kwargs):
         parameters=[
             {
                 "device_type": "d405",
+                "enable_infra": False,
+                "enable_infra1": False,
+                "enable_infra2": False,
+                "enable_color": True,
+                "enable_depth": True,
+                "enable_gyro": False,
+                "enable_accel": False,
+                "enable_motion": False,
                 "align_depth.enable": True,
                 "enable_sync": True,
                 "depth_module.emitter_enabled": emitter_enabled,
@@ -66,16 +74,12 @@ def _launch_setup(context, *args, **kwargs):
     visual_slam_container = ComposableNodeContainer(
         package="rclcpp_components",
         executable="component_container_mt",
-        name="realsense_d405_visual_slam_container",
+        name="realsense_d405_vslam_rgbd_container",
         namespace="",
         composable_node_descriptions=[visual_slam],
         output="screen",
     )
 
-    return [realsense_camera, visual_slam_container]
-
-
-def generate_launch_description():
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -87,7 +91,7 @@ def generate_launch_description():
                 [
                     FindPackageShare("camera_odom_isaac_ros_examples"),
                     "rviz",
-                    "realsense_d405_visual_slam.rviz",
+                    "realsense_d405_vslam_rgbd.rviz",
                 ]
             ),
         ],
@@ -96,13 +100,14 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("depth_profile", default_value="640,360,60"),
-            DeclareLaunchArgument("color_profile", default_value="640,360,60"),
+            DeclareLaunchArgument("depth_profile", default_value="640,360,30"),
+            DeclareLaunchArgument("color_profile", default_value="848,480,30"),
             DeclareLaunchArgument("emitter_enabled", default_value="1"),
-            DeclareLaunchArgument("image_jitter_threshold_ms", default_value="20.0"),
+            DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0"),
             DeclareLaunchArgument("sync_matching_threshold_ms", default_value="10.0"),
             DeclareLaunchArgument("launch_rviz", default_value="true"),
-            OpaqueFunction(function=_launch_setup),
+            realsense_camera,
+            visual_slam_container,
             rviz,
         ]
     )

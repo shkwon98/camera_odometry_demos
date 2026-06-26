@@ -2,7 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch_ros.actions import Node
 
 
@@ -15,6 +15,29 @@ def _load_launch(path: Path):
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module.generate_launch_description()
+
+
+def _argument_names(path: Path) -> list[str]:
+    return [
+        entity.name
+        for entity in _load_launch(path).entities
+        if isinstance(entity, DeclareLaunchArgument)
+    ]
+
+
+def _assert_zed_launch(path: Path):
+    entities = _load_launch(path).entities
+    launch_text = path.read_text()
+
+    assert "isaac_ros_vslam_templates" not in launch_text
+    assert sum(isinstance(entity, IncludeLaunchDescription) for entity in entities) == 0
+    assert sum(isinstance(entity, OpaqueFunction) for entity in entities) == 1
+    assert any(
+        isinstance(entity, Node)
+        and entity.node_package == "rviz2"
+        and entity.node_executable == "rviz2"
+        for entity in entities
+    )
 
 
 def _assert_rviz_config(path: Path, expected_topics: tuple[str, ...]):
@@ -58,6 +81,13 @@ def test_package_metadata_installs_launch_and_config_files():
     assert "install(DIRECTORY config launch rviz DESTINATION share/${PROJECT_NAME})" in cmake_lists
 
 
+def test_ambiguous_zed_visual_slam_alias_was_removed():
+    assert not (PACKAGE_ROOT / "launch" / "zed2i_visual_slam.launch.py").exists()
+    assert not (PACKAGE_ROOT / "launch" / "zed2i_vslam_rgbd_imu.launch.py").exists()
+    assert not (PACKAGE_ROOT / "rviz" / "zed2i_visual_slam.rviz").exists()
+    assert not (PACKAGE_ROOT / "rviz" / "zed2i_vslam_rgbd_imu.rviz").exists()
+
+
 def test_zed2i_specs_select_zed2i_model_and_frames():
     specs = json.loads(
         (PACKAGE_ROOT / "config" / "zed2i_visual_slam_interface_specs.json").read_text()
@@ -78,18 +108,12 @@ def test_zed2i_specs_select_zed2i_model_and_frames():
     assert hd720_specs["camera_resolution"] == {"width": 1280, "height": 720}
 
 
-def test_zed2i_visual_slam_launch_builds_vga_stereo_odometry_graph():
-    launch_file = PACKAGE_ROOT / "launch" / "zed2i_visual_slam.launch.py"
+def test_zed2i_stereo_launch_is_standalone():
+    launch_file = PACKAGE_ROOT / "launch" / "zed2i_vslam_stereo.launch.py"
     launch_text = launch_file.read_text()
-    entities = _load_launch(launch_file).entities
 
-    argument_names = [
-        entity.name
-        for entity in entities
-        if isinstance(entity, DeclareLaunchArgument)
-    ]
-
-    assert argument_names == [
+    _assert_zed_launch(launch_file)
+    assert _argument_names(launch_file) == [
         "interface_specs_file",
         "pub_frame_rate",
         "grab_frame_rate",
@@ -98,107 +122,125 @@ def test_zed2i_visual_slam_launch_builds_vga_stereo_odometry_graph():
         "sync_matching_threshold_ms",
         "launch_rviz",
     ]
-    assert sum(isinstance(entity, IncludeLaunchDescription) for entity in entities) == 0
-    assert any(
-        isinstance(entity, Node)
-        and entity.node_package == "rviz2"
-        and entity.node_executable == "rviz2"
-        for entity in entities
-    )
 
     for expected_text in (
         "zed_components",
         "stereolabs::ZedCamera",
         "nvidia::isaac_ros::visual_slam::VisualSlamNode",
         "nvidia::isaac_ros::image_proc::ImageFormatConverterNode",
-        "component_container_mt",
-        "visual_slam_container = ComposableNodeContainer",
-        '"general.grab_resolution": grab_resolution',
-        '"general.pub_resolution": "NATIVE"',
         '"depth.depth_mode": "NONE"',
         '"sensors.publish_imu": False',
         '"sensors.publish_imu_tf": False',
         '"tracking_mode": 0',
         '"base_frame": "zed2i_camera_center"',
-        '"camera_optical_frames": [',
-        '"enable_localization_n_mapping": False',
-        '"publish_map_to_odom_tf": False',
-        '"publish_odom_to_base_tf": True',
-        '"sync_matching_threshold_ms": sync_matching_threshold_ms',
+        '"zed2i_left_camera_frame_optical"',
+        '"zed2i_right_camera_frame_optical"',
         "zed_left_rgb_converter",
         "vslam_left_mono_converter",
-        "zed2i_visual_slam_interface_specs.json",
-        'FindPackageShare("camera_odom_isaac_ros_examples")',
-        'DeclareLaunchArgument("grab_resolution", default_value="VGA")',
-        'DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0")',
-        'DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0")',
-        'DeclareLaunchArgument("launch_rviz", default_value="true")',
-        'IfCondition(LaunchConfiguration("launch_rviz"))',
-        '"zed2i_visual_slam.rviz"',
-        "zed2i_camera_center",
-        "zed2i_left_camera_frame_optical",
-        "zed2i_right_camera_frame_optical",
-        "return [robot_state_publisher, visual_slam_container]",
+        '"zed2i_vslam_stereo.rviz"',
     ):
         assert expected_text in launch_text
+    assert '"imu_frame":' not in launch_text
+    assert '("visual_slam/imu",' not in launch_text
+
+
+def test_zed2i_rgbd_launch_is_standalone():
+    launch_file = PACKAGE_ROOT / "launch" / "zed2i_vslam_rgbd.launch.py"
+    launch_text = launch_file.read_text()
+
+    _assert_zed_launch(launch_file)
+    assert _argument_names(launch_file) == [
+        "interface_specs_file",
+        "pub_frame_rate",
+        "grab_frame_rate",
+        "grab_resolution",
+        "depth_mode",
+        "image_jitter_threshold_ms",
+        "sync_matching_threshold_ms",
+        "launch_rviz",
+    ]
+
+    for expected_text in (
+        "zed_components",
+        "stereolabs::ZedCamera",
+        "nvidia::isaac_ros::visual_slam::VisualSlamNode",
+        "nvidia::isaac_ros::image_proc::ImageFormatConverterNode",
+        '"video.publish_rgb": True',
+        '"video.publish_left_right": False',
+        '"depth.depth_mode": depth_mode',
+        '"depth.publish_depth_map": True',
+        '"sensors.publish_imu": False',
+        '"sensors.publish_imu_tf": False',
+        '"tracking_mode": 2',
+        '"depth_scale_factor": 1.0',
+        '"num_cameras": 1',
+        '"depth_camera_id": 0',
+        '"base_frame": "zed2i_camera_center"',
+        '"camera_optical_frames": ["zed2i_left_camera_frame_optical"]',
+        "zed_rgb_converter",
+        '("visual_slam/image_0", "rgb/image_rect")',
+        '("visual_slam/camera_info_0", "rgb/camera_info_rect")',
+        '("visual_slam/depth_0", "zed_node/depth/depth_registered")',
+        '"zed2i_vslam_rgbd.rviz"',
+    ):
+        assert expected_text in launch_text
+    assert '"imu_frame":' not in launch_text
+    assert '("visual_slam/imu",' not in launch_text
 
     _assert_rviz_config(
-        PACKAGE_ROOT / "rviz" / "zed2i_visual_slam.rviz",
+        PACKAGE_ROOT / "rviz" / "zed2i_vslam_rgbd.rviz",
         (
             "/visual_slam/tracking/odometry",
             "/visual_slam/tracking/vo_path",
             "/visual_slam/tracking/slam_path",
             "/visual_slam/vis/landmarks_cloud",
             "/visual_slam/vis/observations_cloud",
-            "/left/image_rect",
-            "/right/image_rect",
+            "/rgb/image_rect",
+            "/zed_node/depth/depth_registered",
         ),
     )
 
-    for removed_text in (
-        "isaac_ros_examples.launch.py",
-        "zed_stereo_rect,visual_slam",
-        "image_format_node_left",
-        "image_format_node_right",
-        '"imu_frame":',
-        '"gyro_noise_density":',
-        '"gyro_random_walk":',
-        '"accel_noise_density":',
-        '"accel_random_walk":',
-        '"calibration_frequency":',
-        '"imu_jitter_threshold_ms":',
-        '"img_mask_top":',
-        '"img_mask_bottom":',
-        '"img_mask_left":',
-        '"img_mask_right":',
-        '"enable_image_denoising": False',
-        '"enable_ground_constraint_in_odometry": False',
-        '"enable_ground_constraint_in_slam": False',
-        "\n    container = ComposableNodeContainer",
-        '("visual_slam/imu",',
-        'DeclareLaunchArgument("enable_ground_constraint_in_odometry"',
-        'DeclareLaunchArgument("base_frame"',
-        'DeclareLaunchArgument("camera_optical_frames"',
-        'DeclareLaunchArgument("tracking_mode"',
-        'DeclareLaunchArgument("imu_frame"',
-        'DeclareLaunchArgument("imu_topic"',
-        'DeclareLaunchArgument("publish_imu"',
-        'DeclareLaunchArgument("publish_imu_tf"',
-        'DeclareLaunchArgument("imu_pub_rate"',
-        'DeclareLaunchArgument("gyro_noise_density"',
-        'DeclareLaunchArgument("gyro_random_walk"',
-        'DeclareLaunchArgument("accel_noise_density"',
-        'DeclareLaunchArgument("accel_random_walk"',
-        'DeclareLaunchArgument("calibration_frequency"',
-        'DeclareLaunchArgument("enable_localization_n_mapping"',
-        'DeclareLaunchArgument("publish_map_to_odom_tf"',
-        'DeclareLaunchArgument("publish_odom_to_base_tf"',
-        'DeclareLaunchArgument("enable_ground_constraint_in_slam"',
-        'DeclareLaunchArgument("img_mask_top"',
-        'DeclareLaunchArgument("img_mask_bottom"',
-        'DeclareLaunchArgument("img_mask_left"',
-        'DeclareLaunchArgument("img_mask_right"',
-        'DeclareLaunchArgument("imu_jitter_threshold_ms"',
-        'DeclareLaunchArgument("enable_slam_visualization"',
+
+def test_zed2i_stereo_imu_launch_is_standalone():
+    launch_file = PACKAGE_ROOT / "launch" / "zed2i_vslam_stereo_imu.launch.py"
+    launch_text = launch_file.read_text()
+
+    _assert_zed_launch(launch_file)
+    assert _argument_names(launch_file) == [
+        "interface_specs_file",
+        "pub_frame_rate",
+        "grab_frame_rate",
+        "grab_resolution",
+        "image_jitter_threshold_ms",
+        "sync_matching_threshold_ms",
+        "launch_rviz",
+    ]
+
+    for expected_text in (
+        '"sensors.publish_imu": True',
+        '"sensors.publish_imu_tf": True',
+        '"tracking_mode": 1',
+        '"imu_frame": "zed2i_imu_link"',
+        '"gyro_noise_density": 0.000244',
+        '"accel_noise_density": 0.001862',
+        '("visual_slam/imu", "zed_node/imu/data")',
+        '"zed2i_vslam_stereo_imu.rviz"',
     ):
-        assert removed_text not in launch_text
+        assert expected_text in launch_text
+
+    for rviz_name in (
+        "zed2i_vslam_stereo.rviz",
+        "zed2i_vslam_stereo_imu.rviz",
+    ):
+        _assert_rviz_config(
+            PACKAGE_ROOT / "rviz" / rviz_name,
+            (
+                "/visual_slam/tracking/odometry",
+                "/visual_slam/tracking/vo_path",
+                "/visual_slam/tracking/slam_path",
+                "/visual_slam/vis/landmarks_cloud",
+                "/visual_slam/vis/observations_cloud",
+                "/left/image_rect",
+                "/right/image_rect",
+            ),
+        )
