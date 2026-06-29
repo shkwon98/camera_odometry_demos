@@ -61,6 +61,7 @@ grab_frame_rate:=30
 pub_frame_rate:=30.0
 image_jitter_threshold_ms:=34.0
 sync_matching_threshold_ms:=5.0
+enable_slam:=true
 ```
 
 The RGB-D launch also accepts:
@@ -75,8 +76,7 @@ Fixed internal settings for the stereo launch:
 tracking_mode:=0
 publish_imu:=False
 publish_imu_tf:=False
-enable_localization_n_mapping:=False
-publish_map_to_odom_tf:=False
+publish_map_to_odom_tf:=True
 publish_odom_to_base_tf:=True
 base_frame:=zed2i_camera_center
 camera_optical_frames:=['zed2i_left_camera_frame_optical', 'zed2i_right_camera_frame_optical']
@@ -85,10 +85,11 @@ camera_optical_frames:=['zed2i_left_camera_frame_optical', 'zed2i_right_camera_f
 The interface specs use `672x376`, matching the ZED2i VGA output. Isaac ROS
 image converter memory pools must match the actual incoming image size.
 
-The RGB-D and stereo launches do not fuse the ZED2i IMU, do not build a SLAM
-map, and publish the pose to `/visual_slam/tracking/odometry`. In RViz, use
-`odom` as the fixed frame. `zed2i_vslam_rgbd_imu.launch.py` is intentionally not
-provided; use `zed2i_vslam_stereo_imu.launch.py` for ZED2i IMU fusion.
+The RGB-D and stereo launches do not fuse the ZED2i IMU. They publish
+`map -> odom` and use `map` as the RViz fixed frame by default. Set
+`enable_slam:=false` when comparing pure odometry drift.
+`zed2i_vslam_rgbd_imu.launch.py` is intentionally not provided; use
+`zed2i_vslam_stereo_imu.launch.py` for ZED2i IMU fusion.
 
 ## Drift checks
 
@@ -130,11 +131,12 @@ ros2 launch camera_odom_isaac_ros_examples realsense_d405_vslam_stereo.launch.py
 Launch arguments:
 
 ```text
-depth_profile:=640,360,30
-color_profile:=848,480,30
+depth_profile:=480,270,30
+color_profile:=480,270,30
 emitter_enabled:=1
 image_jitter_threshold_ms:=34.0
 sync_matching_threshold_ms:=10.0
+enable_slam:=true
 ```
 
 Fixed internal settings:
@@ -143,10 +145,20 @@ Fixed internal settings:
 device_type:=d405
 tracking_mode:=2
 depth_scale_factor:=1000.0
-enable_localization_n_mapping:=False
-publish_map_to_odom_tf:=False
+publish_map_to_odom_tf:=True
 publish_odom_to_base_tf:=True
 ```
+
+Map-based localization/mapping is enabled by default for these launch files:
+
+```bash
+ros2 launch camera_odom_isaac_ros_examples realsense_d405_vslam_rgbd.launch.py \
+  enable_slam:=true
+```
+
+This turns on Isaac ROS Visual SLAM localization/mapping. The launch always
+publishes `map -> odom`, and the RViz config uses `map` as the fixed frame. Set
+`enable_slam:=false` when comparing pure odometry drift.
 
 Check the input and odometry rates:
 
@@ -159,8 +171,10 @@ ros2 topic hz /visual_slam/tracking/odometry --window 100
 If Visual SLAM reports a frame delta near `100 ms`, the camera stream is only
 arriving at about 10 Hz. Check the actual rates and USB bandwidth, or
 intentionally relax `image_jitter_threshold_ms` only for slow debug runs. If the
-RealSense node reports `overflow video frame detected`, first try disabling the
-projector or moving the camera to a direct USB 3 port:
+RealSense node reports `overflow video frame detected`, the depth stream is
+being published with corrupted frames. Keep the D405 RGB-D launch at the default
+`480,270,30` profiles, then try disabling the projector or moving the camera to
+a direct USB 3 port:
 
 ```bash
 ros2 launch camera_odom_isaac_ros_examples realsense_d405_vslam_rgbd.launch.py \
@@ -200,6 +214,7 @@ depth_profile:=640,360,30
 color_profile:=640,360,30
 image_jitter_threshold_ms:=34.0
 sync_matching_threshold_ms:=10.0
+enable_slam:=true
 ```
 
 Fixed internal settings:
@@ -208,8 +223,7 @@ Fixed internal settings:
 device_type:=d555
 tracking_mode:=2
 depth_scale_factor:=1000.0
-enable_localization_n_mapping:=False
-publish_map_to_odom_tf:=False
+publish_map_to_odom_tf:=True
 publish_odom_to_base_tf:=True
 ```
 

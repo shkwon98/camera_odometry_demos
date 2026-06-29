@@ -47,6 +47,7 @@ def _launch_setup(context, *args, **kwargs):
     grab_resolution = LaunchConfiguration("grab_resolution")
     image_jitter_threshold_ms = LaunchConfiguration("image_jitter_threshold_ms")
     sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
+    enable_slam = LaunchConfiguration("enable_slam")
 
     zed_wrapper_share = get_package_share_directory("zed_wrapper")
     zed_common_config = os.path.join(zed_wrapper_share, "config", "common_stereo.yaml")
@@ -121,8 +122,8 @@ def _launch_setup(context, *args, **kwargs):
         parameters=[
             {
                 "rectified_images": True,
-                "enable_slam_visualization": False,
-                "enable_landmarks_view": False,
+                "enable_slam_visualization": True,
+                "enable_landmarks_view": True,
                 "enable_observations_view": False,
                 "camera_optical_frames": [
                     "zed2i_left_camera_frame_optical",
@@ -137,8 +138,8 @@ def _launch_setup(context, *args, **kwargs):
                 "accel_noise_density": 0.001862,
                 "accel_random_walk": 0.003,
                 "calibration_frequency": 200.0,
-                "enable_localization_n_mapping": False,
-                "publish_map_to_odom_tf": False,
+                "enable_localization_n_mapping": enable_slam,
+                "publish_map_to_odom_tf": True,
                 "publish_odom_to_base_tf": True,
                 "sync_matching_threshold_ms": sync_matching_threshold_ms,
                 "image_jitter_threshold_ms": image_jitter_threshold_ms,
@@ -236,6 +237,7 @@ def generate_launch_description():
             DeclareLaunchArgument("grab_resolution", default_value="VGA"),
             DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0"),
             DeclareLaunchArgument("sync_matching_threshold_ms", default_value="5.0"),
+            DeclareLaunchArgument("enable_slam", default_value="true"),
             DeclareLaunchArgument("launch_rviz", default_value="true"),
             OpaqueFunction(function=_launch_setup),
             rviz,

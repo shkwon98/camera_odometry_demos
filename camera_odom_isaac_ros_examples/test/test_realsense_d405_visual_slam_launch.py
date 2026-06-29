@@ -53,17 +53,40 @@ def _assert_rviz_config(path: Path, expected_topics: tuple[str, ...]):
         "Class: rviz_default_plugins/TF",
         "Class: rviz_default_plugins/Path",
         "Class: rviz_default_plugins/Odometry",
+        "      Covariance:\n        Orientation:\n",
+        "        Value: false\n      Shape:\n",
         "Shape:",
         "Axes Length: 0.12",
         "Axes Radius: 0.012",
         "Value: Axes",
         "Class: rviz_default_plugins/PointCloud2",
         "Class: rviz_default_plugins/Image",
+        "Fixed Frame: map",
     ):
         assert expected_text in rviz_text
     assert "Shape: Axes" not in rviz_text
+    for unused_topic in (
+        "/visual_slam/vis/observations_cloud",
+        "/visual_slam/vis/pose_graph_nodes",
+        "/visual_slam/vis/pose_graph_edges",
+        "/visual_slam/vis/localizer",
+        "/visual_slam/vis/localizer_map_cloud",
+        "/visual_slam/vis/gravity",
+        "/visual_slam/vis/velocity",
+        "/visual_slam/vis/slam_odometry",
+    ):
+        assert unused_topic not in rviz_text
     for topic in expected_topics:
         assert topic in rviz_text
+
+
+def _assert_vslam_visualization_settings(launch_text: str):
+    for expected_text in (
+        '"enable_slam_visualization": True',
+        '"enable_landmarks_view": True',
+        '"enable_observations_view": False',
+    ):
+        assert expected_text in launch_text
 
 
 def test_package_metadata_declares_realsense_dependency_and_test():
@@ -87,12 +110,14 @@ def test_d405_rgbd_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_direct_realsense_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "depth_profile",
         "color_profile",
         "emitter_enabled",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
@@ -113,14 +138,19 @@ def test_d405_rgbd_launch_is_standalone():
         '"enable_sync": True',
         '"depth_module.depth_profile": depth_profile',
         '"rgb_camera.color_profile": color_profile',
+        '"depth_module.color_profile": color_profile',
         '"depth_module.emitter_enabled": emitter_enabled',
         '"camera_optical_frames": ["camera_color_optical_frame"]',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
+        '"publish_odom_to_base_tf": True',
         '("visual_slam/image_0", "/camera/color/image_raw")',
         '("visual_slam/camera_info_0", "/camera/color/camera_info")',
         '("visual_slam/depth_0", "/camera/aligned_depth_to_color/image_raw")',
-        'DeclareLaunchArgument("depth_profile", default_value="640,360,30")',
-        'DeclareLaunchArgument("color_profile", default_value="848,480,30")',
+        'DeclareLaunchArgument("depth_profile", default_value="480,270,30")',
+        'DeclareLaunchArgument("color_profile", default_value="480,270,30")',
         'DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0")',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
         '"realsense_d405_vslam_rgbd.rviz"',
     ):
         assert expected_text in launch_text
@@ -132,11 +162,14 @@ def test_d405_rgbd_launch_is_standalone():
             "/visual_slam/tracking/vo_path",
             "/visual_slam/tracking/slam_path",
             "/visual_slam/vis/landmarks_cloud",
-            "/visual_slam/vis/observations_cloud",
+            "/visual_slam/vis/loop_closure_cloud",
             "/camera/color/image_raw",
             "/camera/aligned_depth_to_color/image_raw",
         ),
     )
+    assert "Fixed Frame: map" in (
+        PACKAGE_ROOT / "rviz" / "realsense_d405_vslam_rgbd.rviz"
+    ).read_text()
 
 
 def test_d405_stereo_launch_is_standalone():
@@ -144,10 +177,12 @@ def test_d405_stereo_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_direct_realsense_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "infra_profile",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
@@ -159,6 +194,8 @@ def test_d405_stereo_launch_is_standalone():
         '"enable_depth": False',
         '"tracking_mode": 0',
         '"rectified_images": True',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
         '"camera_infra1_optical_frame"',
         '"camera_infra2_optical_frame"',
         '("visual_slam/image_0", "/camera/infra1/image_rect_raw")',
@@ -166,6 +203,7 @@ def test_d405_stereo_launch_is_standalone():
         '("visual_slam/image_1", "/camera/infra2/image_rect_raw")',
         '("visual_slam/camera_info_1", "/camera/infra2/camera_info")',
         '"realsense_d405_vslam_stereo.rviz"',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
     ):
         assert expected_text in launch_text
     assert '"imu_frame"' not in launch_text
@@ -178,7 +216,7 @@ def test_d405_stereo_launch_is_standalone():
             "/visual_slam/tracking/vo_path",
             "/visual_slam/tracking/slam_path",
             "/visual_slam/vis/landmarks_cloud",
-            "/visual_slam/vis/observations_cloud",
+            "/visual_slam/vis/loop_closure_cloud",
             "/camera/infra1/image_rect_raw",
             "/camera/infra2/image_rect_raw",
         ),

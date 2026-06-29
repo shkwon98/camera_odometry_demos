@@ -54,17 +54,40 @@ def _assert_rviz_config(path: Path, expected_topics: tuple[str, ...]):
         "Class: rviz_default_plugins/TF",
         "Class: rviz_default_plugins/Path",
         "Class: rviz_default_plugins/Odometry",
+        "      Covariance:\n        Orientation:\n",
+        "        Value: false\n      Shape:\n",
         "Shape:",
         "Axes Length: 0.12",
         "Axes Radius: 0.012",
         "Value: Axes",
         "Class: rviz_default_plugins/PointCloud2",
         "Class: rviz_default_plugins/Image",
+        "Fixed Frame: map",
     ):
         assert expected_text in rviz_text
     assert "Shape: Axes" not in rviz_text
+    for unused_topic in (
+        "/visual_slam/vis/observations_cloud",
+        "/visual_slam/vis/pose_graph_nodes",
+        "/visual_slam/vis/pose_graph_edges",
+        "/visual_slam/vis/localizer",
+        "/visual_slam/vis/localizer_map_cloud",
+        "/visual_slam/vis/gravity",
+        "/visual_slam/vis/velocity",
+        "/visual_slam/vis/slam_odometry",
+    ):
+        assert unused_topic not in rviz_text
     for topic in expected_topics:
         assert topic in rviz_text
+
+
+def _assert_vslam_visualization_settings(launch_text: str):
+    for expected_text in (
+        '"enable_slam_visualization": True',
+        '"enable_landmarks_view": True',
+        '"enable_observations_view": False',
+    ):
+        assert expected_text in launch_text
 
 
 def test_package_metadata_declares_d555_visual_slam_test_and_restamper():
@@ -89,11 +112,13 @@ def test_d555_rgbd_launch_is_standalone_and_uses_restamper():
     launch_text = launch_file.read_text()
 
     _assert_direct_realsense_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "depth_profile",
         "color_profile",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
@@ -101,6 +126,8 @@ def test_d555_rgbd_launch_is_standalone_and_uses_restamper():
         '"device_type": "d555"',
         '"tracking_mode": 2',
         '"depth_scale_factor": 1000.0',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
         "restamp_realsense_rgbd.py",
         '"color_image_in": "/camera/color/image_raw"',
         '"color_image_out": "/camera_odom_d555/color/image_raw"',
@@ -112,6 +139,7 @@ def test_d555_rgbd_launch_is_standalone_and_uses_restamper():
         '("visual_slam/camera_info_0", "/camera_odom_d555/color/camera_info")',
         "/camera_odom_d555/aligned_depth_to_color/image_raw",
         '"realsense_d555_vslam_rgbd.rviz"',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
     ):
         assert expected_text in launch_text
 
@@ -122,7 +150,7 @@ def test_d555_rgbd_launch_is_standalone_and_uses_restamper():
             "/visual_slam/tracking/vo_path",
             "/visual_slam/tracking/slam_path",
             "/visual_slam/vis/landmarks_cloud",
-            "/visual_slam/vis/observations_cloud",
+            "/visual_slam/vis/loop_closure_cloud",
             "/camera_odom_d555/color/image_raw",
             "/camera_odom_d555/aligned_depth_to_color/image_raw",
         ),
@@ -167,13 +195,17 @@ def test_d555_stereo_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_direct_realsense_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "infra_profile",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
     assert '"tracking_mode": 0' in launch_text
+    assert '"enable_localization_n_mapping": enable_slam' in launch_text
+    assert '"publish_map_to_odom_tf": True' in launch_text
     assert '"enable_sync": True' in launch_text
     assert '"depth_module.emitter_enabled": False' in launch_text
     assert '"enable_gyro": False' in launch_text
@@ -187,6 +219,7 @@ def test_d555_stereo_launch_is_standalone():
     assert '("visual_slam/camera_info_1", "/camera_odom_d555/infra2/camera_info")' in launch_text
     assert '("visual_slam/imu",' not in launch_text
     assert '"realsense_d555_vslam_stereo.rviz"' in launch_text
+    assert 'DeclareLaunchArgument("enable_slam", default_value="true")' in launch_text
 
 
 def test_d555_stereo_imu_launch_is_standalone():
@@ -196,15 +229,19 @@ def test_d555_stereo_imu_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_direct_realsense_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "infra_profile",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
     for expected_text in (
         '"tracking_mode": 1',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
         '"enable_sync": True',
         '"depth_module.emitter_enabled": False',
         '"enable_gyro": True',
@@ -220,6 +257,7 @@ def test_d555_stereo_imu_launch_is_standalone():
         '"accel_noise_density": 0.001862',
         '("visual_slam/imu", "/camera/imu")',
         '"realsense_d555_vslam_stereo_imu.rviz"',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
     ):
         assert expected_text in launch_text
 
@@ -234,7 +272,7 @@ def test_d555_stereo_imu_launch_is_standalone():
                 "/visual_slam/tracking/vo_path",
                 "/visual_slam/tracking/slam_path",
                 "/visual_slam/vis/landmarks_cloud",
-                "/visual_slam/vis/observations_cloud",
+                "/visual_slam/vis/loop_closure_cloud",
                 "/camera_odom_d555/infra1/image_rect_raw",
                 "/camera_odom_d555/infra2/image_rect_raw",
             ),

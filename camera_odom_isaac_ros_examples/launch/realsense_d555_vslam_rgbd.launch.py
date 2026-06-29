@@ -12,6 +12,7 @@ def generate_launch_description():
     color_profile = LaunchConfiguration("color_profile")
     image_jitter_threshold_ms = LaunchConfiguration("image_jitter_threshold_ms")
     sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
+    enable_slam = LaunchConfiguration("enable_slam")
 
     realsense_camera = Node(
         name="camera",
@@ -67,11 +68,11 @@ def generate_launch_description():
                 "sync_matching_threshold_ms": sync_matching_threshold_ms,
                 "base_frame": "camera_link",
                 "camera_optical_frames": ["camera_color_optical_frame"],
-                "enable_slam_visualization": False,
-                "enable_landmarks_view": False,
+                "enable_slam_visualization": True,
+                "enable_landmarks_view": True,
                 "enable_observations_view": False,
-                "enable_localization_n_mapping": False,
-                "publish_map_to_odom_tf": False,
+                "enable_localization_n_mapping": enable_slam,
+                "publish_map_to_odom_tf": True,
                 "publish_odom_to_base_tf": True,
                 "min_num_images": 1,
                 "num_cameras": 1,
@@ -121,6 +122,7 @@ def generate_launch_description():
             DeclareLaunchArgument("color_profile", default_value="640,360,30"),
             DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0"),
             DeclareLaunchArgument("sync_matching_threshold_ms", default_value="10.0"),
+            DeclareLaunchArgument("enable_slam", default_value="true"),
             DeclareLaunchArgument("launch_rviz", default_value="true"),
             realsense_camera,
             restamp_rgbd,

@@ -13,6 +13,7 @@ def generate_launch_description():
     emitter_enabled = LaunchConfiguration("emitter_enabled")
     image_jitter_threshold_ms = LaunchConfiguration("image_jitter_threshold_ms")
     sync_matching_threshold_ms = LaunchConfiguration("sync_matching_threshold_ms")
+    enable_slam = LaunchConfiguration("enable_slam")
 
     realsense_camera = Node(
         name="camera",
@@ -35,6 +36,7 @@ def generate_launch_description():
                 "enable_sync": True,
                 "depth_module.emitter_enabled": emitter_enabled,
                 "depth_module.depth_profile": depth_profile,
+                "depth_module.color_profile": color_profile,
                 "rgb_camera.color_profile": color_profile,
             }
         ],
@@ -53,11 +55,11 @@ def generate_launch_description():
                 "sync_matching_threshold_ms": sync_matching_threshold_ms,
                 "base_frame": "camera_link",
                 "camera_optical_frames": ["camera_color_optical_frame"],
-                "enable_slam_visualization": False,
-                "enable_landmarks_view": False,
+                "enable_slam_visualization": True,
+                "enable_landmarks_view": True,
                 "enable_observations_view": False,
-                "enable_localization_n_mapping": False,
-                "publish_map_to_odom_tf": False,
+                "enable_localization_n_mapping": enable_slam,
+                "publish_map_to_odom_tf": True,
                 "publish_odom_to_base_tf": True,
                 "min_num_images": 1,
                 "num_cameras": 1,
@@ -100,11 +102,12 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
-            DeclareLaunchArgument("depth_profile", default_value="640,360,30"),
-            DeclareLaunchArgument("color_profile", default_value="848,480,30"),
+            DeclareLaunchArgument("depth_profile", default_value="480,270,30"),
+            DeclareLaunchArgument("color_profile", default_value="480,270,30"),
             DeclareLaunchArgument("emitter_enabled", default_value="1"),
             DeclareLaunchArgument("image_jitter_threshold_ms", default_value="34.0"),
             DeclareLaunchArgument("sync_matching_threshold_ms", default_value="10.0"),
+            DeclareLaunchArgument("enable_slam", default_value="true"),
             DeclareLaunchArgument("launch_rviz", default_value="true"),
             realsense_camera,
             visual_slam_container,

@@ -47,17 +47,40 @@ def _assert_rviz_config(path: Path, expected_topics: tuple[str, ...]):
         "Class: rviz_default_plugins/TF",
         "Class: rviz_default_plugins/Path",
         "Class: rviz_default_plugins/Odometry",
+        "      Covariance:\n        Orientation:\n",
+        "        Value: false\n      Shape:\n",
         "Shape:",
         "Axes Length: 0.12",
         "Axes Radius: 0.012",
         "Value: Axes",
         "Class: rviz_default_plugins/PointCloud2",
         "Class: rviz_default_plugins/Image",
+        "Fixed Frame: map",
     ):
         assert expected_text in rviz_text
     assert "Shape: Axes" not in rviz_text
+    for unused_topic in (
+        "/visual_slam/vis/observations_cloud",
+        "/visual_slam/vis/pose_graph_nodes",
+        "/visual_slam/vis/pose_graph_edges",
+        "/visual_slam/vis/localizer",
+        "/visual_slam/vis/localizer_map_cloud",
+        "/visual_slam/vis/gravity",
+        "/visual_slam/vis/velocity",
+        "/visual_slam/vis/slam_odometry",
+    ):
+        assert unused_topic not in rviz_text
     for topic in expected_topics:
         assert topic in rviz_text
+
+
+def _assert_vslam_visualization_settings(launch_text: str):
+    for expected_text in (
+        '"enable_slam_visualization": True',
+        '"enable_landmarks_view": True',
+        '"enable_observations_view": False',
+    ):
+        assert expected_text in launch_text
 
 
 def test_package_metadata_installs_launch_and_config_files():
@@ -113,6 +136,7 @@ def test_zed2i_stereo_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_zed_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "interface_specs_file",
         "pub_frame_rate",
@@ -120,6 +144,7 @@ def test_zed2i_stereo_launch_is_standalone():
         "grab_resolution",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
@@ -132,12 +157,15 @@ def test_zed2i_stereo_launch_is_standalone():
         '"sensors.publish_imu": False',
         '"sensors.publish_imu_tf": False',
         '"tracking_mode": 0',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
         '"base_frame": "zed2i_camera_center"',
         '"zed2i_left_camera_frame_optical"',
         '"zed2i_right_camera_frame_optical"',
         "zed_left_rgb_converter",
         "vslam_left_mono_converter",
         '"zed2i_vslam_stereo.rviz"',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
     ):
         assert expected_text in launch_text
     assert '"imu_frame":' not in launch_text
@@ -149,6 +177,7 @@ def test_zed2i_rgbd_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_zed_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "interface_specs_file",
         "pub_frame_rate",
@@ -157,6 +186,7 @@ def test_zed2i_rgbd_launch_is_standalone():
         "depth_mode",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
@@ -172,6 +202,8 @@ def test_zed2i_rgbd_launch_is_standalone():
         '"sensors.publish_imu": False',
         '"sensors.publish_imu_tf": False',
         '"tracking_mode": 2',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
         '"depth_scale_factor": 1.0',
         '"num_cameras": 1',
         '"depth_camera_id": 0',
@@ -182,6 +214,7 @@ def test_zed2i_rgbd_launch_is_standalone():
         '("visual_slam/camera_info_0", "rgb/camera_info_rect")',
         '("visual_slam/depth_0", "zed_node/depth/depth_registered")',
         '"zed2i_vslam_rgbd.rviz"',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
     ):
         assert expected_text in launch_text
     assert '"imu_frame":' not in launch_text
@@ -194,7 +227,7 @@ def test_zed2i_rgbd_launch_is_standalone():
             "/visual_slam/tracking/vo_path",
             "/visual_slam/tracking/slam_path",
             "/visual_slam/vis/landmarks_cloud",
-            "/visual_slam/vis/observations_cloud",
+            "/visual_slam/vis/loop_closure_cloud",
             "/rgb/image_rect",
             "/zed_node/depth/depth_registered",
         ),
@@ -206,6 +239,7 @@ def test_zed2i_stereo_imu_launch_is_standalone():
     launch_text = launch_file.read_text()
 
     _assert_zed_launch(launch_file)
+    _assert_vslam_visualization_settings(launch_text)
     assert _argument_names(launch_file) == [
         "interface_specs_file",
         "pub_frame_rate",
@@ -213,6 +247,7 @@ def test_zed2i_stereo_imu_launch_is_standalone():
         "grab_resolution",
         "image_jitter_threshold_ms",
         "sync_matching_threshold_ms",
+        "enable_slam",
         "launch_rviz",
     ]
 
@@ -220,11 +255,14 @@ def test_zed2i_stereo_imu_launch_is_standalone():
         '"sensors.publish_imu": True',
         '"sensors.publish_imu_tf": True',
         '"tracking_mode": 1',
+        '"enable_localization_n_mapping": enable_slam',
+        '"publish_map_to_odom_tf": True',
         '"imu_frame": "zed2i_imu_link"',
         '"gyro_noise_density": 0.000244',
         '"accel_noise_density": 0.001862',
         '("visual_slam/imu", "zed_node/imu/data")',
         '"zed2i_vslam_stereo_imu.rviz"',
+        'DeclareLaunchArgument("enable_slam", default_value="true")',
     ):
         assert expected_text in launch_text
 
@@ -239,7 +277,7 @@ def test_zed2i_stereo_imu_launch_is_standalone():
                 "/visual_slam/tracking/vo_path",
                 "/visual_slam/tracking/slam_path",
                 "/visual_slam/vis/landmarks_cloud",
-                "/visual_slam/vis/observations_cloud",
+                "/visual_slam/vis/loop_closure_cloud",
                 "/left/image_rect",
                 "/right/image_rect",
             ),
