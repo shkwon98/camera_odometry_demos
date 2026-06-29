@@ -93,12 +93,14 @@ def _launch_setup(context, *args, **kwargs):
                 "general.grab_resolution": grab_resolution,
                 "general.pub_frame_rate": pub_frame_rate,
                 "general.pub_resolution": "NATIVE",
+                "debug.disable_nitros": True,
                 "video.enable_24bit_output": True,
                 "video.publish_rgb": True,
                 "video.publish_left_right": False,
                 "video.publish_raw": False,
                 "video.publish_gray": False,
                 "depth.depth_mode": depth_mode,
+                "depth.openni_depth_mode": True,
                 "depth.depth_stabilization": 0,
                 "depth.publish_depth_map": True,
                 "depth.publish_point_cloud": False,
@@ -123,7 +125,7 @@ def _launch_setup(context, *args, **kwargs):
         parameters=[
             {
                 "tracking_mode": 2,
-                "depth_scale_factor": 1.0,
+                "depth_scale_factor": 1000.0,
                 "rectified_images": False,
                 "enable_slam_visualization": True,
                 "enable_landmarks_view": True,
